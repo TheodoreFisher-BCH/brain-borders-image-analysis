@@ -1,0 +1,142 @@
+clear all 
+close all
+opengl hardware
+
+
+%SMA outline + registration 
+[filename,pathname]=uigetfile('*.png','registration2');
+Base= imread(fullfile(pathname,filename)); 
+Base1= rot90(Base,3) 
+imshow(Base);
+imshow(Base1);
+
+
+%SMA
+[filename,pathname]=uigetfile('*.tif','bcelltest1');
+Float1= imread(fullfile(pathname,filename), 'tif'); 
+imshow(Float1);
+
+J = imadjust(Float1,[0.1 0.4])
+imshow(J) %J=contrasted image for comparison 
+ 
+%point-Base1d registration to Base1 image 
+% possible to load in fixed points 
+
+fixedPoints = [37.8493975903602,54.7168674698778;-5.52409638554354,1153.51204819277;2481.22289156626,1327.00602409638;2336.64457831325,2613.75301204819;4086.04216867470,2208.93373493976;4852.30722891566,2237.84939759036;3912.54819277108,3683.63253012048;5242.66867469880,3625.80120481928;6601.70481927711,1196.88554216867;7310.13855421687,2237.84939759036;8625.80120481928,155.921686746986;8784.83734939759,1298.09036144578;4071.58433734940,5158.33132530121;4953.51204819277,5172.78915662651;4028.21084337349,5910.13855421687;4996.88554216868,5910.13855421687]
+movingPoints = [17.5602409638560,353.560240963856;3.29518072289216,1109.60843373494;2071.72891566265,1152.40361445783;1971.87349397590,2079.63253012048;3983.24698795181,2108.16265060241;4896.21084337349,2136.69277108434;3697.94578313253,3463.34337349398;5224.30722891566,3477.60843373494;6508.16265060241,1352.11445783133;6907.58433734940,1965.51204819277;8391.15060240964,225.174698795182;8747.77710843374,1166.66867469880;4140.16265060241,4932.64457831325;4753.56024096386,4989.70481927711;4211.48795180723,5760.01807228916;4896.21084337349,5774.28313253012]
+cpselect(J,Base1,fixedPoints, movingPoints);
+
+%if fine tune needed use cpcorr
+% transform Base1d of reg points B220
+tform = fitgeotrans(movingPoints1,fixedPoints1,'similarity')
+
+Sinusmap = imwarp(J,tform,'OutputView',imref2d(size(Base1)));
+imshowpair(Base1,Sinusmap)
+
+
+%register contrast map for B220 as new Base1 
+Jregistered = imwarp(J,tform,'OutputView',imref2d(size(Base1)));
+imshowpair(Base1,Jregistered)
+
+
+se90 = strel('line',1,90);
+se0 = strel('line',1,0);
+BWsdil11 = imdilate(Jregistered,[se90 se0]);
+imshow(BWsdil1);
+sinus_edge = edge(Jregistered,'Sobel',0.1)
+imshow(sinus_edge)
+
+edgeBW2 = bwareaopen(sinus_edge,4)
+imshow(edgeBW2)
+BWW1 = bwareafilt(edgeBW2, [4, 20000])
+imshow(BWW1)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%B220 
+[filename,pathname]=uigetfile('*.tif','bcelltest1');
+Float1= imread(fullfile(pathname,filename), 'tif'); 
+imshow(Float1);
+
+%adjust contrast tool (input values ) 
+%imtool(Float1);
+%J=contrasted image for comparison 
+ 
+%point-Base1d registration to Base1 image 
+% possible to load in fixed points from SMA (more unbiased) 
+
+%%fixedPoints = [1084.04281767956,4.01519337016589;1442.05386740332,1.77762430939242;1126.55662983425,288.186464088398;1381.63950276243,292.661602209945;1169.07044198895,543.269337016575;1312.27486187845,619.346685082873;1148.93232044199,708.849447513812;1370.45165745856,979.595303867404;1115.36878453039,975.120165745856;1412.96546961326,1248.10359116022;1070.61740331492,1245.86602209945;576.114640883978,543.269337016575;587.302486187846,704.374309392265;0.500000000000000,538.794198895028;10.0096685082875,695.424033149171]
+%%movingPoints = [7755.31618962433,2107.89132379249;8339.03354203936,2228.06842576029;7617.97093023256,3189.48524150268;8218.85644007156,3361.16681574240;6999.91726296959,4271.07915921288;7823.98881932021,4597.27415026834;6965.58094812165,5060.81440071556;8339.03354203936,6125.24016100179;7703.81171735241,6434.26699463327;8596.55590339893,7224.00223613596;7961.33407871199,7618.86985688730;5094.25178890877,4562.93783542040;5111.41994633274,5095.15071556351;2398.85107334526,4717.45125223614;2536.19633273703,5198.15966010734]
+%%cpselect(J,Base1,movingPoints,fixedPoints);
+
+%if fine tune needed use cpcorr
+% transform Base1d of reg points B220
+tform = fitgeotrans(movingPoints1,fixedPoints1,'similarity')
+
+%view B220 
+B220registered = imwarp(Float1,tform,'OutputView',imref2d(size(Base1)));
+imshowpair(Base1,B220registered)
+
+
+
+%register contrast map for B220 as new Base1 
+Jregistered = imwarp(J,tform,'OutputView',imref2d(size(Base1)));
+imshowpair(Base1,Jregistered)
+
+%B220 processing 
+%binary filtering at level x 
+
+JB220 = imadjust(B220registered,[0.12 0.2])
+BW = im2bw(JB220,0.13) 
+imshow(labeloverlay(B220registered,BW))
+
+imshowpair(BW,Jregistered) 
+imshow(BW)
+BWW = bwareafilt(BW, [5, 20000000])
+imshow(BWW)
+
+
+se90 = strel('line',1,90);
+se0 = strel('line',1,0);
+BWsdil1 = imdilate(BWW,[se90 se0]);
+imshow(BWsdil1);
+%edge analysis w/fudge 
+
+%[~,threshold] = edge(BWsdil1,'sobel',[]);
+%fudgeFactor = 2;
+%BWs = edge(BW,'sobel',threshold * fudgeFactor);
+
+%imshow(BWs)
+%imshow(labeloverlay(Jregistered,BWs))
+
+%dilate image and fill cells check parameters 
+
+se90 = strel('line',1,90);
+se0 = strel('line',1,0);
+BWsdil = imdilate(BWsdil1,[se90 se0]);
+imshow(BWsdil);
+
+BWdfill1 = imfill(BWsdil,'holes');
+BWdfill = imfill(BWdfill1,'holes');
+imshow(BWdfill)
+
+
+
+BWnobord = imclearborder(BWdfill,1);
+imshow(BWnobord)
+imshow(labeloverlay(Jregistered,BWnobord))
+
+
+%higher strel can be used to separate big clusters 
+seD = strel(1);
+BWfinal = imerode(BWnobord,seD);
+BWfinal = imerode(BWfinal,seD);
+imshow(BWfinal)
+imshow(labeloverlay(Jregistered,BWfinal))
+imshow(labeloverlay(B220registered,BWfinal))
+
+
+C = imfuse(edgeBW2,BWfinal,'falsecolor','Scaling','joint','ColorChannels',[1 2 2]);
+imshow(C)
+
+%save B220
