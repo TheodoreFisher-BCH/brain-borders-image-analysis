@@ -1,0 +1,47 @@
+clear all 
+close all
+clear imshow
+opengl hardware
+
+
+[filename,pathname]=uigetfile('*.png','registration2');
+Base1= imread(fullfile(pathname,filename), 'png');  
+imshow(Base1);
+
+
+[filename,pathname]=uigetfile('*.png','registration2');
+regmap = imread(fullfile(pathname,filename), 'png'); 
+regmapbw = im2bw(regmap)
+imshow(regmap);
+imshow(regmapbw);
+backreg = imcomplement(regmap)
+imshow(backreg)
+
+fixedPoints = [212.408775981524,114.390300230947;187.341801385681,158.025404157044;236.547344110855,154.311778290993;168.773672055427,191.448036951501;258.829099307159,190.519630484988;174.344110854504,274.076212471132;265.327944572748,267.577367205543;220.764434180139,298.214780600462]
+movingPoints = [420.274941995360,119.502320185615;349.834106728538,279.595127610209;518.465197215777,264.653132250580;270.854988399072,407.669373549884;603.848027842228,403.400232018562;268.720417633411,732.124129930395;633.732018561485,723.585846867749;460.831786542924,838.852668213457]
+cpselect(Base1,regmap,fixedPoints,movingPoints);
+
+%if fine tune needed use cpcorr
+tform = fitgeotrans(movingPoints1,fixedPoints1,'similarity')
+
+%Skullmap = imwarp(Base1,tform,'OutputView',imref2d(size(regmap)));
+imshowpair(Skullmap,regmap)
+background = edge(Skullmap,strel('disk',5));
+imshow(background)
+
+imshow(Skullmap)
+h = drawfreehand;
+BW = createMask(h)
+imshow(BW)
+total = bwarea(BW)
+
+BW2 = im2uint8(BW)
+totalproject = bsxfun(@times, Skullmap, cast(BW, 'like', rgbImage));
+imshow(totalproject)
+imshow(Skullmap)
+hdif1 = drawfreehand;
+BW = createMask(hdif1)
+imshow(BW)
+diffuse = bwarea(BW)
+
+countsPercentage = 100 * (diffuse/total)
