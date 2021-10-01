@@ -1,0 +1,208 @@
+clc;
+workspace;
+clear all;
+
+clc;    % Clear the command window.
+%close all;  % Close all figures (except those of imtool.)
+imtool close all;  % Close all imtool figures if you have the Image Processing Toolbox.
+clear;  % Erase all existing variables. Or clearvars if you want.
+workspace;  % Make sure the workspace panel is showing.
+format long g;
+format compact;
+fontSize = 13;
+
+% Check that user has the Image Processing Toolbox installed.
+hasIPT = license('test', 'image_toolbox');
+if ~hasIPT
+	% User does not have the toolbox installed.
+	message = sprintf('Sorry, but you do not seem to have the Image Processing Toolbox.\nDo you want to try to continue anyway?');
+	reply = questdlg(message, 'Toolbox missing', 'Yes', 'No', 'Yes');
+	if strcmpi(reply, 'No')
+		% User said No, so exit.
+		return;
+	end
+end
+%=======================================================
+
+%load in files of interest 
+
+load('13-B220pro.mat')
+load('13-SMApro.mat')
+
+%set vars 
+im2 = BWfinal
+im_1 = BWfinal
+imshow(im_1)
+
+%filter background noise 
+
+BWWW1 = bwareafilt(im2, [100, 20000000])
+imshow(BWWW1)
+
+%convert to 8-bit/assign arbitrary values 
+
+BWWWW1 = uint8(BWWW1 * 250 )
+imshow(BWWWW1)
+
+%run if previous data set pre-dialted 
+B220fill = imfill(BWWWW1,'holes')
+se = offsetstrel('ball',6,6);
+erodedI = imerode(B220fill,se);
+imshow(erodedI) 
+strelclust = imoverlay(BWWWW1,erodedI)
+imshow(strelclust) 
+
+%perform scanning  3+3 um distance/fill holes/ erode back to membrane 
+
+echo off
+   se90 = strel('line',6,90);
+se0 = strel('line',6,0);
+BWsdilat = imdilate(im_1,[se90 se0]);
+imshow(BWsdilat);
+sefill = imfill(BWsdilat,'holes')
+se3 = strel('line',6,1);
+sefill2 = imclose(sefill,se3);
+imshow(sefill2);
+se2fill = imfill(sefill2,'holes');
+imshow(se2fill);
+
+
+se = offsetstrel('arbitrary', [0 1 1])
+
+
+se2 = strel('line',6,1);
+erodedII = imerode(se2fill,se2);
+imshow(erodedII);
+strelclust2 = imoverlay(erodedII, im2);
+imshow(strelclust2) ;
+
+subplot(1,2,1);
+imshow(im2);
+subplot(1,2,2);
+imshow(strelclust2);
+
+
+
+
+bw4_perim = bwperim(erodedII);
+overlay1 = imoverlay(im_1, bw4_perim, [1 .3 .3]);
+imshow(overlay1)
+
+
+labeledImage = label2rgb(erodedII);
+[L, num] = bwlabel(erodedII);
+
+mask = im2bw(erodedII, 1);
+overlay3 = imoverlay(im_1, mask);
+close all
+imshow(overlay3)
+coloredLabels = label2rgb (L, 'parula', 'k', 'shuffle');
+
+imshow(coloredLabels)
+
+stats = regionprops(L,'Area','circularity')
+statarea = regionprops(L,'Area')
+s = regionprops('table', L,'centroid');
+
+
+
+
+imshow(BWW1)
+
+hold off 
+
+imshow(BWW1) 
+ hFH = imfreehand();
+ % Create a binary image ("mask") from the ROI object.
+ binaryImage = hFH.createMask();
+ xy = hFH.getPosition;
+ % Label the binary image and compute the centroid and center of mass.
+ labeledImage = bwlabel(binaryImage);
+ % Will keep only the part of the image that's inside the mask, zero outside mask.
+ imshow(labeledImage)
+
+ 
+ 
+se90 = strel('line',566,90);
+se0 = strel('line',566,0);
+BWsdil = imdilate(labeledImage,[se90 se0]);
+imshow(BWsdil);
+imcombine = imoverlay(BWsdil,labeledImage);
+imshow(imcombine,parula) ;
+
+imsub = imsubtract( BWsdil, labeledImage);
+imshow(imsub);
+
+sinusarea = regionprops(labeledImage, 'area');
+perisinusarea = regionprops(imsub, 'area');
+
+A = table2array(s) 
+    
+
+img_d = round(A);
+
+hold off
+imshow(labeledImage) 
+   hold on 
+   axis on
+  scatter(img_d(:,1),img_d(:,2))
+  
+  
+cim = imfuse(imcombine,mask)
+colormap parula
+colormap(gca, jet(256));
+imshow(cim, jet)
+
+  
+  
+stats=regionprops(L,'Centroid');
+
+
+distances = zeros(2286,2286);
+
+hold off
+edgemap = labeledImage;
+cent = regionprops(L,'centroid')
+S = regionprops(L,'centroid','area');% or you could use the .mat file
+C = vertcat(S.Centroid);
+CC = vertcat(S.Area)
+dmap = bwdist(edgemap); % distance from exterior points to edge
+%dmapi = bwdist(~edgemap); % distance from interior points to edge
+D = interp2(dmap,C(:,1),C(:,2)) 
+t = table(D,CC,C)
+imshow(L,[]); hold on
+plot(C(:,1),C(:,2),'x')
+hold off
+scatter(t.D,t.CC)
+xlim([1 1000])
+ylim([250 4000])
+
+
+tt = table2array(t) 
+
+sinusarea
+perisinusarea
+
+
+
+
+
+
+%load('p14 6 S100 .mat')
+%imshow(neutfinal,BWW1) 
+
+
+
+
+%centneut = regionprops(neutfinal,'centroid')
+%CN = vertcat(centneut.Centroid);
+%dmap = bwdist(L); % distance from exterior points to edge
+%dmapi = bwdist(~edgemap); % distance from interior points to edge
+%DN = interp2(dmap,CN(:,1),CN(:,2)) 
+%tN = table(DN,CN)
+
+
+
+
+
+
