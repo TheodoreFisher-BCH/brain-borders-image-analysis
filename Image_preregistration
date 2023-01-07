@@ -1,0 +1,73 @@
+ clc;
+workspace;
+clear all;
+
+clc;    % Clear the command window.
+close all;  % Close all figures (except those of imtool.)
+imtool close all;  % Close all imtool figures if you have the Image Processing Toolbox.
+clear;  % Erase all existing variables. Or clearvars if you want.
+workspace;  % Make sure the workspace panel is showing.
+format long g;
+format compact;
+fontSize = 13;
+
+% Check that user has the Image Processing Toolbox installed.
+hasIPT = license('test', 'image_toolbox');
+if ~hasIPT
+	% User does not have the toolbox installed.
+	message = sprintf('Sorry, but you do not seem to have the Image Processing Toolbox.\nDo you want to try to continue anyway?');
+	reply = questdlg(message, 'Toolbox missing', 'Yes', 'No', 'Yes');
+	if strcmpi(reply, 'No')
+		% User said No, so exit.
+		return;
+	end
+end
+
+
+%outline + registration 
+%load in .png file for image that samples will be registered to (can also
+%use .tif)
+[filename,pathname]=uigetfile('*.png','registration2');
+Base1= imread(fullfile(pathname,filename)); 
+Base1 = imrotate(Base1,90);
+Base = Base1; 
+imshow(Base1);
+
+
+%import sample image 
+[filename,pathname]=uigetfile('*.tif','bcelltest1');
+Float1= imread(fullfile(pathname,filename), 'tif'); 
+imshow(Float1);
+
+J = imadjust(Float1,[0.12 0.35])
+imshow(J) %J=contrasted image for comparison 
+ 
+%point-based registration to base image 
+% possible to load in fixed points 
+%can pre allocate points that so they are close to where they need to be 
+fixedPoints = [24.5875912408753,4726.77737226277;24.5875912408753,5894.66058394160;1601.22992700730,3661.08394160584;2214.36861313869,4726.77737226277;3601.22992700730,2434.80656934306;4374.95255474453,3865.46350364963;5031.88686131387,2376.41240875912;6988.09124087591,3661.08394160584;6637.72627737226,4814.36861313869;8800.50000000000,4828.96715328467;8800.50000000000,5894.66058394160;3849.40510948905,1077.14233576642;4739.91605839416,1106.33941605839;3849.40510948905,0.500000000000000;4783.71167883212,0.500000000000000]
+movingPoints = [0.500000000000000,4663.76034063260;111.740875912408,5254.31995133820;2142.68978102190,3785.12287104623;2315.53649635037,4303.66301703163;3799.13746958637,2287.11800486618;4648.96715328467,3122.54379562044;5052.27615571776,2229.50243309002;6391.83819951338,3381.81386861314;6074.95255474453,3900.35401459854;8754.07664233577,4706.97201946472;8624.44160583942,5283.12773722628;4216.85036496350,1192.42214111922;4634.56326034063,1178.01824817518;4231.25425790754,11.3029197080286;4562.54379562044,0.500000000000000]
+%use cpselect to pick points and save before close (should load to
+%workspace)
+cpselect(J,Base1,movingPoints, fixedPoints);
+
+%if fine tune needed use cpcorr
+% transform based of reg points B220
+tform = fitgeotrans(movingPoints1,fixedPoints1,'similarity')
+
+finmap = imwarp(Float1,tform,'OutputView',imref2d(size(Base1)));
+imshowpair(Base1,finmap)
+
+
+%register contrast map for B220 as new base 
+Jregistered = imwarp(Float1,tform,'OutputView',imref2d(size(Base1)));
+imshowpair(Base1,Jregistered)
+%binarize signal if inserting already thresholded images (set parameter to
+%%cutoff signal intensity 
+smafinal = imbinarize(Jregistered,0.18)
+imshow(smafinal)
+%option to add custom save function here or save by hand in variable
+%workspace 
+
+
+
