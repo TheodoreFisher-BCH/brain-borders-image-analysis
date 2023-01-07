@@ -1,0 +1,57 @@
+%load in files here -make sure path is set to contained folder 
+edgesma = load('filename');
+%rename variables to grab later
+im_SMAS1KO1 = edgesma; 
+imshow(im_SMAS1KO1);
+
+load('filename');
+im_SMAS1KO2 = edgesma; 
+imshow(im_SMAS1KO2);
+
+load('filename');
+im_SMAS1KO3 = edgesma; 
+imshow(im_SMAS1KO3);
+
+load('filename');
+im_SMAS1KO4 = edgesma; 
+imshow(im_SMAS1KO4);
+
+load('filename');
+im_SMAS1KO5 = edgesma; 
+imshow(im_SMAS1KO5);
+
+load('filename');
+im_SMAS1KO6 = edgesma; 
+imshow(im_SMAS1KO6);
+ 
+%add images and divide by total
+meanMatrixSMA = (im_SMAS1KO1 + im_SMAS1KO2 + im_SMAS1KO3 + im_SMAS1KO4 + im_SMAS1KO5 + im_SMAS1KO6 )/6;
+imshow(meanMatrixSMA) ;
+ISMA = imbinarize(meanMatrixSMA);
+imshow(ISMA) ;
+%resize pixels into bins to look at avg signal in a larger area 
+finalM15 = imresize(meanMatrixSMA,0.007);
+
+imshow(finalM15)
+
+
+%set custom colormap gradient here 
+map = [1 1 1
+    0.1 0.5 0.8
+    0.2 0.7 0.6
+    0.8 0.7 0.3
+    0.9 1 0];
+
+imshow(final15)
+colormap(map);
+
+%make interpolated heatmap
+A = pcolor(finalM15);
+shading interp;
+colormap(map)
+%gives upper and lower cutoffs of signal gradation
+set(gca, 'clim', [0 0.09]);
+shading interp;
+axis off
+hold off
+colormapeditor
